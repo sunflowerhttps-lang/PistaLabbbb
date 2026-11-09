@@ -155,6 +155,19 @@ table.pt{width:100%;border-collapse:collapse;font-size:.88rem;min-width:820px}
 .cr span{width:26px;text-align:right}
 .empty{text-align:center;color:var(--mut);padding:30px}
 .pnote{margin-top:14px;font-size:.78rem;color:var(--mut)}
+
+.coursebox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:20px}
+.cform{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.cform input{flex:1;min-width:200px;background:rgba(7,18,31,.8);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-family:inherit;font-size:.92rem}
+.cform input:focus{outline:none;border-color:var(--cy)}
+.clist{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.citem{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:rgba(7,18,31,.5)}
+.citem b{font-family:Outfit}
+.ccode{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;letter-spacing:.18em;color:var(--cy);margin:4px 0}
+.citem small{color:var(--mut);display:block;margin-bottom:8px}
+.citem .btn+.btn{margin-left:6px}
+.ftr{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:.85rem;color:var(--mut)}
+.ftr select{border-radius:12px}
 </style>
 </head>
 <body>
@@ -170,6 +183,7 @@ table.pt{width:100%;border-collapse:collapse;font-size:.88rem;min-width:820px}
     <div id="aform">
       <div class="field" id="fName" hidden><label for="aName">Nombre</label><input id="aName" type="text" autocomplete="name" placeholder="Tu nombre"></div>
       <div class="field" id="fRole" hidden><label for="aRole">Soy</label><select id="aRole"><option value="estudiante">Estudiante</option><option value="docente">Docente</option></select></div>
+      <div class="field" id="fCourse" hidden><label for="aCourse">Código del curso</label><input id="aCourse" type="text" autocomplete="off" placeholder="Ej. K7M-4PX (te lo da tu docente)" style="text-transform:uppercase"></div>
       <div class="field"><label for="aEmail">Correo</label><input id="aEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
       <div class="field"><label for="aPass">Contraseña</label><div class="pw"><input id="aPass" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"><button type="button" id="aShow">Ver</button></div></div>
       <div class="field" id="fPass2" hidden><label for="aPass2">Repite la contraseña</label><input id="aPass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña"></div>
@@ -191,9 +205,15 @@ table.pt{width:100%;border-collapse:collapse;font-size:.88rem;min-width:820px}
         <button type="button" class="btn sm" id="panelClose">Cerrar</button>
       </div>
     </div>
+    <div class="coursebox">
+      <div class="lbl">Mis cursos</div>
+      <div class="cform"><input id="cName" type="text" maxlength="40" placeholder="Nombre del curso (ej. 5.º A – Lengua)"><button type="button" class="btn sm" id="cAdd">Generar código</button></div>
+      <div class="clist" id="cList"></div>
+    </div>
+    <div class="ftr"><label for="cFilter">Ver:</label><select id="cFilter"></select></div>
     <div class="stats" id="pStats"></div>
-    <div class="tscroll"><table class="pt"><thead><tr><th>Usuario</th><th>Rol</th><th>Registro</th><th>Último acceso</th><th>Avance por caso</th><th>XP total</th><th></th></tr></thead><tbody id="pBody"></tbody></table></div>
-    <div class="pnote">El avance se guarda al resolver cada etapa y muestra el mejor resultado de cada caso. Solo incluye las cuentas creadas en este navegador.</div>
+    <div class="tscroll"><table class="pt"><thead><tr><th>Estudiante</th><th>Curso</th><th>Registro</th><th>Último acceso</th><th>Avance por caso</th><th>XP total</th><th></th></tr></thead><tbody id="pBody"></tbody></table></div>
+    <div class="pnote">El avance se guarda al resolver cada etapa y muestra el mejor resultado de cada caso. Solo ves a los estudiantes que se registraron con el código de alguno de tus cursos en este navegador.</div>
   </div>
 </div>
 
@@ -550,13 +570,19 @@ renderAll();
 /* ===== LOGIN (cliente) ===== */
 (function(){
   const KU='pistalab_users', KS='pistalab_session';
+  const KC='pistalab_courses';
   const TEACHER_CODE='DOCENTE2026'; // cámbialo por el código que quieras entregar a los docentes
-  let mode='login', mem={users:{},session:null};
+  let mode='login', mem={users:{},session:null,courses:{}};
   const rd=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}};
   const wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
   const rm=k=>{try{localStorage.removeItem(k)}catch(e){}};
   const users=()=>rd(KU)||mem.users;
   const saveUsers=u=>{mem.users=u;wr(KU,u)};
+  const courses=()=>rd(KC)||mem.courses;
+  const saveCourses=c=>{mem.courses=c;wr(KC,c)};
+  const normCode=t=>String(t).toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const showCode=c=>c.length===6?c.slice(0,3)+'-'+c.slice(3):c;
+  function newCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',all=courses();let c;do{c=Array.from({length:6},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}while(all[c]);return c}
   async function hash(t){
     try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('pistalab:'+t));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
     catch(e){let h=5381;for(const c of 'pistalab:'+t)h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'f'+h}
@@ -570,7 +596,7 @@ renderAll();
     $('aSubmit').textContent=m==='login'?'Entrar':'Crear cuenta';
     $('aPass').autocomplete=m==='login'?'current-password':'new-password';
   }
-  function syncCode(){ $('fCode').hidden = !(mode==='register' && $('aRole').value==='docente'); }
+  function syncCode(){ const r=mode==='register'; const doc=$('aRole').value==='docente'; $('fCode').hidden=!(r&&doc); $('fCourse').hidden=!(r&&!doc); }
   const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const me=()=>users()[mem.session];
   function saveProgress(){
@@ -589,7 +615,7 @@ renderAll();
     mem.session=u.email;wr(KS,u.email);
     { const all=users(); if(all[u.email]){ all[u.email].lastAccess=Date.now(); saveUsers(all); } }
     $('panelBtn').hidden = u.role!=='docente';
-    $('userName').textContent=u.name;$('userBox').hidden=false;
+    const cr=u.course&&courses()[u.course];$('userName').textContent=u.name+(cr?' · '+cr.name:'');$('userBox').hidden=false;
     $('auth').hidden=true;document.body.style.overflow='';
     $('aPass').value=$('aPass2').value='';
   }
@@ -607,9 +633,10 @@ renderAll();
       if(!name) return err('Escribe tu nombre.');
       if(pass!==$('aPass2').value) return err('Las contraseñas no coinciden.');
       if(u[email]) return err('Ya existe una cuenta con ese correo.');
-      const role=$('aRole').value;
+      const role=$('aRole').value; let course=null;
       if(role==='docente' && $('aCode').value.trim()!==TEACHER_CODE) return err('Código de docente incorrecto.');
-      u[email]={name,email,role,created:Date.now(),lastAccess:Date.now(),progress:{},hash:await hash(pass)};saveUsers(u);enter(u[email]);
+      if(role==='estudiante'){ course=normCode($('aCourse').value); if(!course) return err('Escribe el código del curso que te dio tu docente.'); if(!courses()[course]) return err('Ese código de curso no existe. Revisa que esté bien escrito.'); }
+      u[email]={name,email,role,course,created:Date.now(),lastAccess:Date.now(),progress:{},hash:await hash(pass)};saveUsers(u);enter(u[email]);
     }else{
       const a=u[email];
       if(!a||a.hash!==await hash(pass)) return err('Correo o contraseña incorrectos.');
@@ -621,26 +648,54 @@ renderAll();
   $('aRole').addEventListener('change',syncCode);
 
   /* ----- Panel docente ----- */
+  let curFilter='all';
   const fmt=t=>t?new Date(t).toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+new Date(t).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—';
   const totalXp=a=>Object.values(a.progress||{}).reduce((n,p)=>n+p.xp,0);
   const doneCases=a=>Object.keys(CASES).filter(k=>{const p=(a.progress||{})[k];return p&&p.done>=CASES[k].stages.length}).length;
+  const myCourses=()=>Object.values(courses()).filter(c=>c.teacher===mem.session).sort((x,y)=>y.created-x.created);
+  function myStudents(){
+    const mine=new Set(myCourses().map(c=>c.code));
+    return Object.values(users()).filter(a=>a.role!=='docente'&&mine.has(a.course)&&(curFilter==='all'||a.course===curFilter)).sort((x,y)=>(y.created||0)-(x.created||0));
+  }
   function renderPanel(){
-    const list=Object.values(users()).sort((x,y)=>(y.created||0)-(x.created||0));
-    const est=list.filter(a=>a.role!=='docente');
+    const cs=myCourses(), all=Object.values(users());
+    if(curFilter!=='all'&&!cs.some(c=>c.code===curFilter)) curFilter='all';
+    $('cList').innerHTML=cs.length?cs.map(c=>{
+      const n=all.filter(a=>a.course===c.code).length;
+      return `<div class="citem"><b>${esc(c.name)}</b><div class="ccode">${showCode(c.code)}</div><small>${n} estudiante${n===1?'':'s'} · creado ${fmt(c.created).slice(0,11)}</small><button type="button" class="btn sm ghost" data-copy="${c.code}">Copiar código</button>${n?'':`<button type="button" class="btn sm ghost" data-delc="${c.code}">Eliminar</button>`}</div>`;
+    }).join(''):'<div class="empty" style="grid-column:1/-1;padding:12px">Aún no tienes cursos. Crea uno para obtener el código que compartirás con tus estudiantes.</div>';
+    $('cFilter').innerHTML='<option value="all">Todos mis cursos</option>'+cs.map(c=>`<option value="${c.code}">${esc(c.name)}</option>`).join('');
+    $('cFilter').value=curFilter;
+    const est=myStudents();
     const avg=est.length?Math.round(est.reduce((n,a)=>n+totalXp(a),0)/est.length):0;
     const fin=est.reduce((n,a)=>n+doneCases(a),0);
-    $('pStats').innerHTML=[[list.length,'Registrados'],[est.length,'Estudiantes'],[avg,'XP promedio'],[fin,'Casos completados']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
-    $('pBody').innerHTML=list.length?list.map(a=>{
+    $('pStats').innerHTML=[[est.length,'Estudiantes'],[cs.length,'Cursos'],[avg,'XP promedio'],[fin,'Casos completados']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('pBody').innerHTML=est.length?est.map(a=>{
       const cases=Object.keys(CASES).map(k=>{
         const t=CASES[k].stages.length,d=Math.min(((a.progress||{})[k]||{}).done||0,t),full=d>=t;
         return `<div class="cr"><em title="${esc(CASES[k].title)}">${esc(CASES[k].title)}</em><div class="bar"><i class="${full?'full':''}" style="width:${d/t*100}%"></i></div><span>${d}/${t}</span></div>`;
       }).join('');
-      const doc=a.role==='docente';
-      return `<tr><td><b>${esc(a.name)}</b><small>${esc(a.email)}</small></td><td><span class="role ${doc?'doc':''}">${doc?'Docente':'Estudiante'}</span></td><td>${fmt(a.created)}</td><td>${fmt(a.lastAccess)}</td><td>${doc?'<small>—</small>':`<div class="cases">${cases}</div>`}</td><td><b>${totalXp(a)}</b> XP<small>${doneCases(a)} de ${Object.keys(CASES).length} casos</small></td><td>${a.email===mem.session?'':`<button type="button" class="btn sm ghost" data-del="${esc(a.email)}">Eliminar</button>`}</td></tr>`;
-    }).join(''):'<tr><td colspan="7" class="empty">Aún no hay usuarios registrados.</td></tr>';
+      const cr=courses()[a.course];
+      return `<tr><td><b>${esc(a.name)}</b><small>${esc(a.email)}</small></td><td><span class="role">${esc(cr?cr.name:'—')}</span></td><td>${fmt(a.created)}</td><td>${fmt(a.lastAccess)}</td><td><div class="cases">${cases}</div></td><td><b>${totalXp(a)}</b> XP<small>${doneCases(a)} de ${Object.keys(CASES).length} casos</small></td><td><button type="button" class="btn sm ghost" data-del="${esc(a.email)}">Eliminar</button></td></tr>`;
+    }).join(''):'<tr><td colspan="7" class="empty">Todavía no hay estudiantes en '+(curFilter==='all'?'tus cursos':'este curso')+'. Comparte el código del curso para que se registren.</td></tr>';
   }
   $('panelBtn').addEventListener('click',()=>{renderPanel();$('panel').hidden=false;});
   $('panelClose').addEventListener('click',()=>{$('panel').hidden=true;});
+  $('cAdd').addEventListener('click',()=>{
+    const name=$('cName').value.trim(); if(!name){$('cName').focus();return;}
+    const all=courses(),code=newCode();
+    all[code]={code,name,teacher:mem.session,created:Date.now()}; saveCourses(all);
+    $('cName').value=''; renderPanel();
+  });
+  $('cName').addEventListener('keydown',e=>{if(e.key==='Enter')$('cAdd').click()});
+  $('cFilter').addEventListener('change',()=>{curFilter=$('cFilter').value;renderPanel();});
+  $('cList').addEventListener('click',e=>{
+    const cp=e.target.closest('[data-copy]');
+    if(cp){ const t=showCode(cp.dataset.copy); try{navigator.clipboard.writeText(t)}catch(x){} cp.textContent='¡Copiado!'; setTimeout(()=>cp.textContent='Copiar código',1500); return; }
+    const d=e.target.closest('[data-delc]'); if(!d) return;
+    if(!d.dataset.sure){d.dataset.sure='1';d.textContent='¿Seguro?';return;}
+    const all=courses(); delete all[d.dataset.delc]; saveCourses(all); renderPanel();
+  });
   $('pBody').addEventListener('click',e=>{
     const b=e.target.closest('[data-del]'); if(!b) return;
     if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='¿Seguro?'; return; }
@@ -648,9 +703,9 @@ renderAll();
   });
   $('csvBtn').addEventListener('click',()=>{
     const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
-    const keys=Object.keys(CASES);
-    const rows=[['Nombre','Correo','Rol','Registro','Ultimo acceso',...keys.map(k=>CASES[k].title+' (etapas)'),'XP total','Casos completados']];
-    Object.values(users()).forEach(a=>rows.push([a.name,a.email,a.role==='docente'?'Docente':'Estudiante',fmt(a.created),fmt(a.lastAccess),...keys.map(k=>((a.progress||{})[k]||{}).done||0),totalXp(a),doneCases(a)]));
+    const keys=Object.keys(CASES), cs=courses();
+    const rows=[['Nombre','Correo','Curso','Codigo curso','Registro','Ultimo acceso',...keys.map(k=>CASES[k].title+' (etapas)'),'XP total','Casos completados']];
+    myStudents().forEach(a=>rows.push([a.name,a.email,(cs[a.course]||{}).name||'',showCode(a.course||''),fmt(a.created),fmt(a.lastAccess),...keys.map(k=>((a.progress||{})[k]||{}).done||0),totalXp(a),doneCases(a)]));
     const blob=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
     const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download='pistalab_avance.csv';l.click();
   });
