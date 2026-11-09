@@ -126,6 +126,35 @@ footer b{color:var(--cy);font-family:Outfit}
 .user{display:flex;align-items:center;gap:8px;color:var(--tx)}
 .user b{font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:640px){.user b{display:none}}
+
+/* ===== PANEL DOCENTE ===== */
+.field select{width:100%;background:rgba(7,18,31,.8);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-family:inherit;font-size:.95rem}
+#panel{position:fixed;inset:0;z-index:90;background:rgba(3,9,16,.82);backdrop-filter:blur(6px);overflow:auto;padding:24px 14px}
+#panel[hidden]{display:none}
+.pbox{max-width:1080px;margin:0 auto;background:#0a1a2b;border:1px solid var(--line);border-radius:24px;padding:26px;animation:fade .5s ease}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.phead h2{font-size:1.7rem;color:var(--cy)}
+.pact{display:flex;gap:8px;flex-wrap:wrap}
+.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.stat b{display:block;font-family:Outfit;font-size:1.8rem;color:var(--cy)}
+.stat span{font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.1em}
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table.pt{width:100%;border-collapse:collapse;font-size:.88rem;min-width:820px}
+.pt th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cy2);padding:12px;background:rgba(56,189,248,.06);white-space:nowrap}
+.pt td{padding:11px 12px;border-top:1px solid rgba(94,234,212,.1);vertical-align:middle}
+.pt td small{display:block;color:var(--mut);font-size:.76rem}
+.role{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.74rem;font-weight:600;border:1px solid var(--cy2);color:var(--cy2)}
+.role.doc{border-color:var(--vi);color:var(--vi)}
+.cases{display:grid;gap:5px;min-width:230px}
+.cr{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--mut)}
+.cr em{font-style:normal;width:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr .bar{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.cr .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--cy2))}
+.cr .bar i.full{background:var(--ok)}
+.cr span{width:26px;text-align:right}
+.empty{text-align:center;color:var(--mut);padding:30px}
+.pnote{margin-top:14px;font-size:.78rem;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -140,13 +169,31 @@ footer b{color:var(--cy);font-family:Outfit}
     </div>
     <div id="aform">
       <div class="field" id="fName" hidden><label for="aName">Nombre</label><input id="aName" type="text" autocomplete="name" placeholder="Tu nombre"></div>
+      <div class="field" id="fRole" hidden><label for="aRole">Soy</label><select id="aRole"><option value="estudiante">Estudiante</option><option value="docente">Docente</option></select></div>
       <div class="field"><label for="aEmail">Correo</label><input id="aEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
       <div class="field"><label for="aPass">Contraseña</label><div class="pw"><input id="aPass" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"><button type="button" id="aShow">Ver</button></div></div>
       <div class="field" id="fPass2" hidden><label for="aPass2">Repite la contraseña</label><input id="aPass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña"></div>
+      <div class="field" id="fCode" hidden><label for="aCode">Código de docente</label><input id="aCode" type="password" autocomplete="off" placeholder="Código que te dio la institución"></div>
       <div class="autherr" id="aErr" role="alert"></div>
       <button type="button" class="btn" id="aSubmit">Entrar</button>
     </div>
     <div class="authnote">Las cuentas se guardan solo en este navegador.</div>
+  </div>
+</div>
+
+
+<div id="panel" hidden>
+  <div class="pbox">
+    <div class="phead">
+      <h2>Panel docente</h2>
+      <div class="pact">
+        <button type="button" class="btn sm ghost" id="csvBtn">Descargar CSV</button>
+        <button type="button" class="btn sm" id="panelClose">Cerrar</button>
+      </div>
+    </div>
+    <div class="stats" id="pStats"></div>
+    <div class="tscroll"><table class="pt"><thead><tr><th>Usuario</th><th>Rol</th><th>Registro</th><th>Último acceso</th><th>Avance por caso</th><th>XP total</th><th></th></tr></thead><tbody id="pBody"></tbody></table></div>
+    <div class="pnote">El avance se guarda al resolver cada etapa y muestra el mejor resultado de cada caso. Solo incluye las cuentas creadas en este navegador.</div>
   </div>
 </div>
 
@@ -158,7 +205,7 @@ footer b{color:var(--cy);font-family:Outfit}
         <option value="primaria">Primaria (3 pistas)</option>
         <option value="secundaria">Secundaria (2 pistas)</option>
       </select>
-      <span class="user" id="userBox" hidden><b id="userName"></b><button type="button" class="btn sm ghost" id="logoutBtn">Salir</button></span>
+      <span class="user" id="userBox" hidden><button type="button" class="btn sm" id="panelBtn" hidden>Panel docente</button><b id="userName"></b><button type="button" class="btn sm ghost" id="logoutBtn">Salir</button></span>
       <span class="rank" id="rank">Aprendiz</span>
       <div class="xp"><i id="xpBar"></i></div>
       <span id="xpTxt">0 XP</span>
@@ -503,6 +550,7 @@ renderAll();
 /* ===== LOGIN (cliente) ===== */
 (function(){
   const KU='pistalab_users', KS='pistalab_session';
+  const TEACHER_CODE='DOCENTE2026'; // cámbialo por el código que quieras entregar a los docentes
   let mode='login', mem={users:{},session:null};
   const rd=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}};
   const wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -517,17 +565,36 @@ renderAll();
   function setMode(m){
     mode=m;err('');
     document.querySelectorAll('.atabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
-    $('fName').hidden=$('fPass2').hidden=m!=='register';
+    $('fName').hidden=$('fPass2').hidden=$('fRole').hidden=m!=='register';
+    syncCode();
     $('aSubmit').textContent=m==='login'?'Entrar':'Crear cuenta';
     $('aPass').autocomplete=m==='login'?'current-password':'new-password';
   }
+  function syncCode(){ $('fCode').hidden = !(mode==='register' && $('aRole').value==='docente'); }
+  const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const me=()=>users()[mem.session];
+  function saveProgress(){
+    if(!mem.session) return;
+    const all=users(), a=all[mem.session]; if(!a) return;
+    const d=done.filter(Boolean).length; a.progress=a.progress||{};
+    const prev=a.progress[ck]||{done:0,xp:0};
+    if(d>prev.done||xp>prev.xp){
+      a.progress[ck]={done:Math.max(d,prev.done),xp:Math.max(xp,prev.xp),total:C().stages.length};
+      saveUsers(all);
+    }
+  }
+  const _ra=renderAll;
+  renderAll=function(){ _ra(); saveProgress(); };
   function enter(u){
     mem.session=u.email;wr(KS,u.email);
+    { const all=users(); if(all[u.email]){ all[u.email].lastAccess=Date.now(); saveUsers(all); } }
+    $('panelBtn').hidden = u.role!=='docente';
     $('userName').textContent=u.name;$('userBox').hidden=false;
     $('auth').hidden=true;document.body.style.overflow='';
     $('aPass').value=$('aPass2').value='';
   }
   function lock(){
+    $('panel').hidden=true;
     $('userBox').hidden=true;$('auth').hidden=false;document.body.style.overflow='hidden';
     setMode('login');$('aEmail').focus();
   }
@@ -540,7 +607,9 @@ renderAll();
       if(!name) return err('Escribe tu nombre.');
       if(pass!==$('aPass2').value) return err('Las contraseñas no coinciden.');
       if(u[email]) return err('Ya existe una cuenta con ese correo.');
-      u[email]={name,email,hash:await hash(pass)};saveUsers(u);enter(u[email]);
+      const role=$('aRole').value;
+      if(role==='docente' && $('aCode').value.trim()!==TEACHER_CODE) return err('Código de docente incorrecto.');
+      u[email]={name,email,role,created:Date.now(),lastAccess:Date.now(),progress:{},hash:await hash(pass)};saveUsers(u);enter(u[email]);
     }else{
       const a=u[email];
       if(!a||a.hash!==await hash(pass)) return err('Correo o contraseña incorrectos.');
@@ -549,6 +618,42 @@ renderAll();
   }
   document.querySelector('.atabs').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMode(b.dataset.mode)});
   $('aSubmit').addEventListener('click',submit);
+  $('aRole').addEventListener('change',syncCode);
+
+  /* ----- Panel docente ----- */
+  const fmt=t=>t?new Date(t).toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+new Date(t).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—';
+  const totalXp=a=>Object.values(a.progress||{}).reduce((n,p)=>n+p.xp,0);
+  const doneCases=a=>Object.keys(CASES).filter(k=>{const p=(a.progress||{})[k];return p&&p.done>=CASES[k].stages.length}).length;
+  function renderPanel(){
+    const list=Object.values(users()).sort((x,y)=>(y.created||0)-(x.created||0));
+    const est=list.filter(a=>a.role!=='docente');
+    const avg=est.length?Math.round(est.reduce((n,a)=>n+totalXp(a),0)/est.length):0;
+    const fin=est.reduce((n,a)=>n+doneCases(a),0);
+    $('pStats').innerHTML=[[list.length,'Registrados'],[est.length,'Estudiantes'],[avg,'XP promedio'],[fin,'Casos completados']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('pBody').innerHTML=list.length?list.map(a=>{
+      const cases=Object.keys(CASES).map(k=>{
+        const t=CASES[k].stages.length,d=Math.min(((a.progress||{})[k]||{}).done||0,t),full=d>=t;
+        return `<div class="cr"><em title="${esc(CASES[k].title)}">${esc(CASES[k].title)}</em><div class="bar"><i class="${full?'full':''}" style="width:${d/t*100}%"></i></div><span>${d}/${t}</span></div>`;
+      }).join('');
+      const doc=a.role==='docente';
+      return `<tr><td><b>${esc(a.name)}</b><small>${esc(a.email)}</small></td><td><span class="role ${doc?'doc':''}">${doc?'Docente':'Estudiante'}</span></td><td>${fmt(a.created)}</td><td>${fmt(a.lastAccess)}</td><td>${doc?'<small>—</small>':`<div class="cases">${cases}</div>`}</td><td><b>${totalXp(a)}</b> XP<small>${doneCases(a)} de ${Object.keys(CASES).length} casos</small></td><td>${a.email===mem.session?'':`<button type="button" class="btn sm ghost" data-del="${esc(a.email)}">Eliminar</button>`}</td></tr>`;
+    }).join(''):'<tr><td colspan="7" class="empty">Aún no hay usuarios registrados.</td></tr>';
+  }
+  $('panelBtn').addEventListener('click',()=>{renderPanel();$('panel').hidden=false;});
+  $('panelClose').addEventListener('click',()=>{$('panel').hidden=true;});
+  $('pBody').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]'); if(!b) return;
+    if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='¿Seguro?'; return; }
+    const all=users(); delete all[b.dataset.del]; saveUsers(all); renderPanel();
+  });
+  $('csvBtn').addEventListener('click',()=>{
+    const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const keys=Object.keys(CASES);
+    const rows=[['Nombre','Correo','Rol','Registro','Ultimo acceso',...keys.map(k=>CASES[k].title+' (etapas)'),'XP total','Casos completados']];
+    Object.values(users()).forEach(a=>rows.push([a.name,a.email,a.role==='docente'?'Docente':'Estudiante',fmt(a.created),fmt(a.lastAccess),...keys.map(k=>((a.progress||{})[k]||{}).done||0),totalXp(a),doneCases(a)]));
+    const blob=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+    const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download='pistalab_avance.csv';l.click();
+  });
   $('auth').addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
   $('aShow').addEventListener('click',()=>{const p=$('aPass'),h=p.type==='password';p.type=h?'text':'password';$('aShow').textContent=h?'Ocultar':'Ver'});
   $('logoutBtn').addEventListener('click',()=>{rm(KS);mem.session=null;resetState();renderAll();lock()});
