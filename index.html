@@ -103,9 +103,52 @@ textarea:focus{outline:none;border-color:var(--cy)}
 footer{text-align:center;color:var(--mut);font-size:.85rem;padding:50px 0 30px}
 footer b{color:var(--cy);font-family:Outfit}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== LOGIN ===== */
+#auth{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);overflow:auto}
+#auth::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 10% 0%,rgba(56,189,248,.2),transparent 45%),radial-gradient(circle at 90% 70%,rgba(167,139,250,.16),transparent 45%),radial-gradient(circle at 30% 100%,rgba(94,234,212,.12),transparent 50%)}
+#auth[hidden]{display:none}
+.authbox{width:100%;max-width:410px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:30px 26px;backdrop-filter:blur(12px);animation:fade .7s ease}
+.authbox .logo{text-align:center;font-size:2.4rem}
+.authbox .tag{text-align:center;color:var(--mut);font-family:Outfit;font-weight:300;margin:2px 0 22px}
+.atabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:99px;padding:4px;margin-bottom:18px}
+.atabs button{flex:1;border:0;background:transparent;color:var(--mut);padding:8px;border-radius:99px;font-family:inherit;font-weight:600;font-size:.9rem;cursor:pointer;transition:.25s}
+.atabs button.on{background:var(--cy);color:var(--bg)}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:var(--cy2);font-weight:600;margin-bottom:5px}
+.field input{width:100%;background:rgba(7,18,31,.8);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-family:inherit;font-size:.95rem;transition:.2s}
+.field input:focus{outline:none;border-color:var(--cy);box-shadow:0 0 0 3px rgba(94,234,212,.15)}
+.pw{position:relative}.pw input{padding-right:64px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--mut);font-size:.78rem;cursor:pointer;padding:6px 8px;font-family:inherit}
+.autherr{min-height:20px;font-size:.86rem;color:var(--bad);margin:2px 0 4px}
+.authbox .btn{width:100%;margin-top:8px}
+.authnote{margin-top:16px;font-size:.76rem;color:var(--mut);text-align:center}
+.user{display:flex;align-items:center;gap:8px;color:var(--tx)}
+.user b{font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.user b{display:none}}
 </style>
 </head>
 <body>
+
+<div id="auth">
+  <div class="authbox">
+    <div class="logo">Pista<span>Lab</span></div>
+    <div class="tag">Descubre lo que el texto no dice</div>
+    <div class="atabs" role="tablist">
+      <button type="button" class="on" data-mode="login">Iniciar sesión</button>
+      <button type="button" data-mode="register">Crear cuenta</button>
+    </div>
+    <div id="aform">
+      <div class="field" id="fName" hidden><label for="aName">Nombre</label><input id="aName" type="text" autocomplete="name" placeholder="Tu nombre"></div>
+      <div class="field"><label for="aEmail">Correo</label><input id="aEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
+      <div class="field"><label for="aPass">Contraseña</label><div class="pw"><input id="aPass" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"><button type="button" id="aShow">Ver</button></div></div>
+      <div class="field" id="fPass2" hidden><label for="aPass2">Repite la contraseña</label><input id="aPass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña"></div>
+      <div class="autherr" id="aErr" role="alert"></div>
+      <button type="button" class="btn" id="aSubmit">Entrar</button>
+    </div>
+    <div class="authnote">Las cuentas se guardan solo en este navegador.</div>
+  </div>
+</div>
 
 <header>
   <div class="wrap">
@@ -115,6 +158,7 @@ footer b{color:var(--cy);font-family:Outfit}
         <option value="primaria">Primaria (3 pistas)</option>
         <option value="secundaria">Secundaria (2 pistas)</option>
       </select>
+      <span class="user" id="userBox" hidden><b id="userName"></b><button type="button" class="btn sm ghost" id="logoutBtn">Salir</button></span>
       <span class="rank" id="rank">Aprendiz</span>
       <div class="xp"><i id="xpBar"></i></div>
       <span id="xpTxt">0 XP</span>
@@ -455,6 +499,62 @@ $('materias').addEventListener('click', e => { const b = e.target.closest('[data
 $('cases').addEventListener('click', e => { const bk = e.target.closest('[data-back]'); if (bk) $('materias').scrollIntoView({behavior:'smooth'}); });
 $('startBtn').addEventListener('click', () => $('materias').scrollIntoView({behavior:'smooth'}));
 renderAll();
+
+/* ===== LOGIN (cliente) ===== */
+(function(){
+  const KU='pistalab_users', KS='pistalab_session';
+  let mode='login', mem={users:{},session:null};
+  const rd=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}};
+  const wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const rm=k=>{try{localStorage.removeItem(k)}catch(e){}};
+  const users=()=>rd(KU)||mem.users;
+  const saveUsers=u=>{mem.users=u;wr(KU,u)};
+  async function hash(t){
+    try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('pistalab:'+t));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+    catch(e){let h=5381;for(const c of 'pistalab:'+t)h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'f'+h}
+  }
+  const err=m=>$('aErr').textContent=m||'';
+  function setMode(m){
+    mode=m;err('');
+    document.querySelectorAll('.atabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+    $('fName').hidden=$('fPass2').hidden=m!=='register';
+    $('aSubmit').textContent=m==='login'?'Entrar':'Crear cuenta';
+    $('aPass').autocomplete=m==='login'?'current-password':'new-password';
+  }
+  function enter(u){
+    mem.session=u.email;wr(KS,u.email);
+    $('userName').textContent=u.name;$('userBox').hidden=false;
+    $('auth').hidden=true;document.body.style.overflow='';
+    $('aPass').value=$('aPass2').value='';
+  }
+  function lock(){
+    $('userBox').hidden=true;$('auth').hidden=false;document.body.style.overflow='hidden';
+    setMode('login');$('aEmail').focus();
+  }
+  async function submit(){
+    const email=$('aEmail').value.trim().toLowerCase(), pass=$('aPass').value, name=$('aName').value.trim();
+    if(!/^\S+@\S+\.\S+$/.test(email)) return err('Escribe un correo válido.');
+    if(pass.length<6) return err('La contraseña debe tener al menos 6 caracteres.');
+    const u=users();
+    if(mode==='register'){
+      if(!name) return err('Escribe tu nombre.');
+      if(pass!==$('aPass2').value) return err('Las contraseñas no coinciden.');
+      if(u[email]) return err('Ya existe una cuenta con ese correo.');
+      u[email]={name,email,hash:await hash(pass)};saveUsers(u);enter(u[email]);
+    }else{
+      const a=u[email];
+      if(!a||a.hash!==await hash(pass)) return err('Correo o contraseña incorrectos.');
+      enter(a);
+    }
+  }
+  document.querySelector('.atabs').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMode(b.dataset.mode)});
+  $('aSubmit').addEventListener('click',submit);
+  $('auth').addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
+  $('aShow').addEventListener('click',()=>{const p=$('aPass'),h=p.type==='password';p.type=h?'text':'password';$('aShow').textContent=h?'Ocultar':'Ver'});
+  $('logoutBtn').addEventListener('click',()=>{rm(KS);mem.session=null;resetState();renderAll();lock()});
+  const sess=rd(KS), u0=sess&&users()[sess];
+  u0?enter(u0):lock();
+})();
 </script>
 </body>
 </html>
