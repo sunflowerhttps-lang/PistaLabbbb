@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PistaLab — Descubre lo que el texto no dice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06111e;--card:rgba(14,32,52,.72);--line:rgba(94,234,212,.2);--cy:#5eead4;--cy2:#38bdf8;--vi:#a78bfa;--tx:#e6f4ff;--mut:#8aa4bf;--warn:#fbbf24;--bad:#f87171;--ok:#4ade80}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;min-height:100vh}
+h1,h2,h3{font-family:Outfit,system-ui,sans-serif;line-height:1.15}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 10% 0%,rgba(56,189,248,.16),transparent 40%),radial-gradient(circle at 90% 60%,rgba(167,139,250,.12),transparent 40%),radial-gradient(circle at 30% 100%,rgba(94,234,212,.09),transparent 45%)}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+header{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);background:rgba(6,17,30,.78);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;height:62px}
+.logo{font-family:Outfit;font-weight:800;font-size:1.35rem;color:var(--cy)}
+.logo span{color:var(--tx)}
+.hud{display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--mut)}
+.rank{padding:5px 12px;border-radius:99px;border:1px solid var(--vi);color:var(--vi);font-weight:600}
+.xp{width:110px;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.xp i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--cy2));transition:width .8s ease}
+select{background:rgba(7,18,31,.8);color:var(--tx);border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-family:inherit;font-size:.82rem}
+@media(max-width:640px){.xp{display:none}}
+.hero{padding:64px 0 30px;text-align:center;animation:fade .9s ease}
+@keyframes fade{from{opacity:0;transform:translateY(16px)}}
+.hero h1{font-size:clamp(3.4rem,10vw,6.5rem);font-weight:800;background:linear-gradient(90deg,var(--cy),var(--cy2),var(--vi),var(--cy));background-size:250% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:250% center}}
+.hero .sub{font-family:Outfit;font-weight:300;font-size:clamp(1.2rem,2.6vw,1.6rem);margin:4px 0 16px}
+.hero p{color:var(--mut);max-width:620px;margin:0 auto}
+.path{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:36px 0 8px}
+.path span{padding:9px 18px;border-radius:99px;border:1px solid var(--line);background:var(--card);font-family:Outfit;font-weight:600;color:var(--mut);animation:up .6s both}
+.path span:nth-child(2){animation-delay:.1s}.path span:nth-child(3){animation-delay:.2s}.path span:nth-child(4){animation-delay:.3s}.path span:nth-child(5){animation-delay:.4s}
+.path span:first-child{color:var(--cy);border-color:var(--cy)}
+@keyframes up{from{opacity:0;transform:translateY(12px)}}
+.how{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:30px 0 8px;text-align:left}
+.how div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;transition:.3s}
+.how div:hover{transform:translateY(-4px);border-color:var(--cy)}
+.how b{font-family:Outfit;color:var(--cy)}
+.how p{color:var(--mut);font-size:.9rem;margin-top:4px}
+.btn{display:inline-block;margin-top:24px;padding:13px 28px;border-radius:99px;background:var(--cy);color:var(--bg);font-weight:600;border:1px solid var(--cy);cursor:pointer;font-family:inherit;font-size:.96rem;transition:.3s}
+.btn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(94,234,212,.45)}
+.btn.ghost{background:transparent;color:var(--cy)}
+.btn.sm{padding:7px 14px;font-size:.84rem;margin-top:0}
+.btn:disabled{opacity:.35;pointer-events:none}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:36px 0 14px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.steps span{padding:7px 14px;border-radius:99px;border:1px solid var(--line);font-size:.85rem;color:var(--mut)}
+.steps span.on{border-color:var(--cy);color:var(--cy)}
+.steps span.ok{background:rgba(74,222,128,.12);border-color:var(--ok);color:var(--ok)}
+.layout{display:grid;gap:20px;grid-template-columns:1.25fr .95fr;align-items:start}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;backdrop-filter:blur(8px)}
+.card h3{color:var(--cy);font-size:1.4rem;margin-bottom:12px}
+.lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--cy2);margin-bottom:10px;font-weight:600}
+.story p{color:#cfe2f3;margin-bottom:14px;font-size:.98rem}
+.s{border-radius:6px;padding:1px 2px;transition:.25s}
+.pick .s{cursor:pointer}
+.pick .s:hover{background:rgba(56,189,248,.18)}
+.s.on{background:rgba(94,234,212,.25);box-shadow:inset 0 -2px var(--cy)}
+.side{display:grid;gap:20px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px dashed var(--cy2);color:var(--cy2);background:rgba(56,189,248,.06);padding:7px 14px;border-radius:99px;font-size:.87rem;font-family:inherit;cursor:pointer;transition:.25s}
+.chip.in{background:var(--cy2);color:var(--bg);border-style:solid}
+.chip:disabled{cursor:default;opacity:.65}
+.board{min-height:70px;border-radius:14px;border:1px dashed var(--line);padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.pista{background:linear-gradient(135deg,rgba(94,234,212,.2),rgba(56,189,248,.15));border:1px solid var(--cy);border-radius:12px;padding:8px 12px;font-size:.88rem;animation:up .4s both}
+.pista button{background:none;border:0;color:var(--mut);cursor:pointer;margin-left:6px;font-size:1rem}
+.empty{color:var(--mut);font-size:.88rem}
+.challenge{margin-top:20px;animation:fade .5s ease}
+.qt{font-size:1.1rem;margin:6px 0 16px;font-weight:500}
+.opts{display:grid;gap:10px}
+.opt{text-align:left;background:rgba(7,18,31,.6);border:1px solid var(--line);color:var(--tx);padding:14px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:.95rem;transition:.25s}
+.opt:hover{border-color:var(--cy)}
+.opt.sel{border-color:var(--cy2);background:rgba(56,189,248,.12)}
+textarea{width:100%;min-height:120px;background:rgba(7,18,31,.6);border:1px solid var(--line);color:var(--tx);border-radius:14px;padding:14px;font-family:inherit;font-size:.95rem;resize:vertical}
+textarea:focus{outline:none;border-color:var(--cy)}
+.frame{color:var(--vi);font-size:.9rem;margin-bottom:8px;font-style:italic}
+.conf{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:18px 0 10px;color:var(--mut);font-size:.88rem}
+.conf button,.rt button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:6px 14px;border-radius:99px;cursor:pointer;font-family:inherit;font-size:.85rem;transition:.25s}
+.conf button.on,.rt button.on{background:var(--vi);color:var(--bg);border-color:var(--vi)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.fb{margin-top:16px;padding:14px 16px;border-radius:14px;font-size:.94rem;border-left:3px solid var(--cy2);background:rgba(56,189,248,.08);animation:fade .4s ease}
+.fb.good{border-color:var(--ok);background:rgba(74,222,128,.09)}
+.fb.bad{border-color:var(--bad);background:rgba(248,113,113,.08)}
+.fb.hint{border-color:var(--warn);background:rgba(251,191,36,.08)}
+.final{margin-top:20px;text-align:center;padding:40px 20px}
+.final h2{font-size:clamp(2rem,5vw,3rem);color:var(--cy);margin-bottom:8px}
+.final p{color:var(--mut)}
+.survey{max-width:620px;margin:26px auto 0;text-align:left;display:grid;gap:14px}
+.survey p{color:var(--tx);font-size:.95rem}
+.rt{display:flex;gap:6px;margin-top:6px}
+.mats{padding:20px 22px 0;max-width:1140px;margin:0 auto}
+.mgrid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:16px}
+.mcard{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;transition:.3s}
+.mcard:hover{transform:translateY(-4px);border-color:var(--cy)}
+.mcard h3{color:var(--cy);font-size:1.3rem}
+.mcard p{color:var(--mut);font-size:.92rem;margin:6px 0 14px}
+.mlinks{display:flex;flex-wrap:wrap;gap:8px}
+footer{text-align:center;color:var(--mut);font-size:.85rem;padding:50px 0 30px}
+footer b{color:var(--cy);font-family:Outfit}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">Pista<span>Lab</span></div>
+    <div class="hud">
+      <select id="grade" aria-label="Nivel escolar">
+        <option value="primaria">Primaria (3 pistas)</option>
+        <option value="secundaria">Secundaria (2 pistas)</option>
+      </select>
+      <span class="rank" id="rank">Aprendiz</span>
+      <div class="xp"><i id="xpBar"></i></div>
+      <span id="xpTxt">0 XP</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="logo" style="font-size:.9rem;letter-spacing:.2em;color:var(--mut)">GESTIÓN DE PROYECTOS EDUCATIVOS</div>
+    <h1 style="margin-top:12px">PistaLab</h1>
+    <div class="sub">Descubre lo que el texto no dice</div>
+    <p>Una plataforma educativa interactiva donde los estudiantes leen historias cortas, identifican pistas, relacionan información y resuelven desafíos para construir inferencias.</p>
+    <div class="path"><span>1 · Explicar</span><span>2 · Relacionar</span><span>3 · Justificar</span><span>4 · Aplicar</span><span>5 · Transferir</span></div>
+    <div class="how">
+      <div><b>Lee la historia</b><p>Un misterio corto con pistas escondidas entre las frases.</p></div>
+      <div><b>Colecciona y conecta</b><p>Las pistas llegan al tablero de evidencias para relacionarlas.</p></div>
+      <div><b>Justifica</b><p>Redacta: “pienso que… porque el texto dice…” e indica tu seguridad.</p></div>
+      <div><b>Recibe orientación</b><p>Pistas graduales que orientan sin revelar la respuesta de inmediato.</p></div>
+    </div>
+    <button class="btn" id="startBtn">Empezar un caso</button>
+  </section>
+
+  <section id="materias" class="mats"></section>
+  <section id="app">
+    <div class="tabs" id="cases"></div>
+    <div class="steps" id="steps"></div>
+    <div class="layout">
+      <div class="card">
+        <h3 id="stTitle"></h3>
+        <div id="story"></div>
+      </div>
+      <div class="side">
+        <div class="card"><div class="lbl">Tarjetas de pistas</div><div class="chips" id="clues"></div></div>
+        <div class="card"><div class="lbl">Tablero de evidencias</div><div class="board" id="board"></div></div>
+      </div>
+    </div>
+    <div class="card challenge" id="chal"></div>
+    <div class="card final" id="final" hidden></div>
+  </section>
+</main>
+
+<footer><b>PistaLab</b> · Aníbal Cuadrado · Antony Martínez · Mario Hernández · 2026</footer>
+
+<script>
+const HEDGE = ['podría','posible','pudo','quizá','tal vez','parece','probablemente'];
+const CASES = {
+  biblioteca: {
+    materia: 'Ciencias',
+    title: 'El misterio de la biblioteca',
+    paras: [
+      [['s1','Cuando terminó el recreo, la profesora Elena regresó a la biblioteca del salón para continuar una actividad de ciencias.'],['s2','El libro que había dejado sobre la mesa ya no estaba.'],['s3','La puerta no tenía señales de haber sido forzada y la ventana permanecía cerrada.'],['s4','Sobre el piso, cerca de una maceta, había unas pequeñas gotas de agua.']],
+      [['s5','Sara fue la primera en acercarse.'],['s6','Dijo que había estado regando las plantas del pasillo y todavía tenía las manos húmedas.'],['s7','Tomás llevaba una carpeta azul bajo el brazo y aseguró que había entrado al salón únicamente para recoger su cuaderno.'],['s8','La profesora recordó que, antes del recreo, había pedido a varios estudiantes mover las mesas para limpiar el espacio.']],
+      [['s9','Al revisar el lugar, encontraron una marca rectangular sin polvo junto a la maceta, como si algo hubiera estado apoyado allí.'],['s10','La carpeta de Tomás estaba seca, pero tenía una esquina doblada.'],['s11','Ninguna de estas señales demostraba por sí sola quién había movido el libro.']]
+    ],
+    clues: [{id:'mesas',t:'Mesas movidas'},{id:'marca',t:'Marca rectangular'},{id:'gotas',t:'Gotas de agua'},{id:'manos',t:'Manos húmedas de Sara'},{id:'carpeta',t:'Carpeta de Tomás'},{id:'ventana',t:'Ventana cerrada'}],
+    stages: [
+      {n:'Explicar', type:'choice', q:'¿Qué se puede inferir sobre lo que ocurrió con el libro? Elige la hipótesis más razonable.',
+       opts:['Sara se llevó el libro.','El libro pudo moverse durante la organización del salón, aunque aún no está comprobado.','El libro nunca estuvo sobre la mesa.'], ok:1,
+       fb:['El texto no lo afirma: Sara explica sus manos húmedas. Presentarlo como certeza no está respaldado.','','El relato dice que el libro sí estaba sobre la mesa; esta opción contradice el texto.'],
+       hints:['Revisa qué afirma el texto sobre el libro y el lugar.','Busca la opción que habla de una posibilidad y no de una certeza.','Recuerda lo que la profesora dijo antes del recreo.']},
+      {n:'Relacionar', type:'board', q:'Lleva al tablero las pistas que apoyan la hipótesis de que el libro pudo moverse. Usa solo las que tengan relación directa.',
+       ok:['mesas','marca'],
+       hints:['Una pista puede estar en el relato sin apoyar tu hipótesis.','Piensa qué pistas muestran que un objeto cambió de lugar.','La marca rectangular indica que algo estuvo apoyado junto a la maceta.']},
+      {n:'Justificar', type:'choice', q:'¿Las gotas de agua demuestran que alguien tomó el libro? Elige la respuesta mejor justificada.',
+       opts:['Sí, hay agua cerca de la maceta y eso prueba quién lo tomó.','No. El agua se relaciona con la maceta y con el riego de Sara, pero no identifica quién tomó el libro.','No se puede decir nada de las pistas.'], ok:1,
+       fb:['Una pista no basta para probarlo: el agua tiene otra explicación posible.','','Las pistas sí aportan información: ayudan a formular hipótesis, aunque no las confirmen.'],
+       hints:['Pregúntate si el agua, por sí sola, identifica a una persona.','Sara tenía las manos húmedas por regar: ¿qué otra explicación hay?','Una pista demuestra algo solo si descarta otras explicaciones.']},
+      {n:'Aplicar', type:'sentence', q:'Haz clic en la frase del relato que muestra que las mesas pudieron moverse antes de notar la desaparición.',
+       ok:['s8'], hints:['Busca la frase que habla de la acción de la profesora.','Pregunta clave: ¿qué parte del relato demuestra eso?','Es la frase sobre lo que pidió la profesora antes del recreo.']},
+      {n:'Transferir', type:'write', q:'Nuevo caso de ciencias: dos macetas recibieron la misma cantidad de agua durante una semana. Una quedó junto a la ventana y tiene hojas amarillas; la otra, en un rincón oscuro, se ve igual que al inicio. Escribe tu conclusión: ¿qué podrías inferir y qué evidencia la sostiene?',
+       ev:['ventana','hojas','rincón','luz','riego','agua'],
+       hints:['Usa la estructura: “Pienso que… porque el texto dice…”','Menciona al menos una pista concreta del caso, como la ventana o las hojas.','Indica si tu idea es una posibilidad o una certeza.']}
+    ]
+  },
+  carta: {
+    materia: 'Lengua',
+    title: 'La carta perdida',
+    paras: [
+      [['s1','Lucía buscó su carta por todo el pupitre.'],['s2','Era la carta que su abuela había escrito desde el pueblo, y la había guardado en el cuaderno de español la noche anterior.'],['s3','Al llegar al salón, el cuaderno estaba en su lugar, pero la carta no.']],
+      [['s4','Andrés, que se sentaba al lado, tenía los ojos rojos y evitaba mirarla.'],['s5','Dijo que había llegado temprano para ayudar a organizar los libros de la biblioteca.'],['s6','Sin embargo, la lista de voluntarios de la biblioteca no tenía su nombre.']],
+      [['s7','En el borde del cuaderno de Lucía había una mancha de tinta azul, la misma que usaba la profesora Marta para corregir.'],['s8','Lucía recordó que su abuela siempre escribía con tinta negra.'],['s9','La carta todavía no aparecía, y Lucía se preguntaba si alguien la había leído antes de perderla.']]
+    ],
+    clues: [{id:'ojos',t:'Ojos rojos de Andrés'},{id:'lista',t:'Lista sin su nombre'},{id:'mancha',t:'Mancha de tinta azul'},{id:'tinta',t:'Tinta negra de la abuela'},{id:'cuaderno',t:'Cuaderno en su lugar'}],
+    stages: [
+      {n:'Explicar', type:'choice', q:'¿Qué se puede inferir sobre Andrés? Elige la idea mejor sustentada en el texto.',
+       opts:['Andrés robó la carta.','Andrés se comportó de forma extraña, lo que sugiere que sabe algo de la carta, aunque aún no está comprobado.','Andrés no estuvo en el salón esa mañana.'], ok:1,
+       fb:['El texto muestra señales, pero no afirma quién tomó la carta. Presentarlo como certeza no está respaldado.','','El relato dice que Andrés se sentaba al lado de Lucía; esta opción contradice el texto.'],
+       hints:['Revisa qué detalles describen el comportamiento de Andrés.','Busca la opción que habla de una posibilidad y no de una certeza.','Fíjate en dónde se sentaba Andrés.']},
+      {n:'Relacionar', type:'board', q:'Lleva al tablero las pistas que hacen sospechar de la explicación de Andrés.',
+       ok:['ojos','lista'],
+       hints:['Compara lo que dijo Andrés con lo que muestra la lista de voluntarios.','Piensa qué pistas describen su actitud y cuáles contradicen su versión.','Una pista habla de su actitud y otra de su explicación.']},
+      {n:'Justificar', type:'choice', q:'¿La mancha de tinta azul demuestra que la profesora Marta tomó la carta? Elige la respuesta mejor justificada.',
+       opts:['Sí, la profesora usa tinta azul y eso prueba que ella la tomó.','No. La mancha muestra que alguien usó tinta azul cerca del cuaderno, pero no identifica a quien la usó ni prueba que tomara la carta.','No se puede concluir nada de las pistas.'], ok:1,
+       fb:['Una mancha no prueba un hecho por sí sola: la profesora pudo corregir en cualquier momento.','','Las pistas sí aportan información y ayudan a formular hipótesis, aunque no las confirmen.'],
+       hints:['Pregúntate cuántas personas podrían usar tinta azul en el salón.','Pregúntate si la mancha identifica a una persona.','Una pista demuestra algo solo si descarta otras explicaciones.']},
+      {n:'Aplicar', type:'sentence', q:'Haz clic en la frase que contradice la explicación que dio Andrés.',
+       ok:['s6'], hints:['Lee con atención lo que dijo Andrés sobre su mañana.','Busca un registro que confirme o niegue su versión.','Es la frase que habla de la lista de voluntarios.']},
+      {n:'Transferir', type:'write', q:'Nuevo caso: un vecino dice que vio a alguien salir del salón con una mochila azul, pero no recuerda la hora. Escribe tu conclusión: ¿qué podrías inferir y qué evidencia te faltaría para confirmarlo?',
+       ev:['mochila','hora','salón','testigo','cámara','vecino'],
+       hints:['Usa la estructura: “Pienso que… porque el texto dice…”','Menciona la mochila o la falta de hora como evidencia.','Indica qué dato confirmaría o descartaría tu idea.']}
+    ]
+  },
+  matematicas: {
+    materia: 'Matemáticas',
+    title: 'La caja de la feria',
+    paras: [
+      [['s1','El sábado, el colegio organizó una feria de libros usados para recaudar fondos para la biblioteca.'],['s2','Mateo estuvo a cargo de la caja y, al terminar la jornada, contó 180.000 pesos.'],['s3','Según el registro de ventas, se vendieron 20 libros a 8.000 pesos cada uno, y el puesto de Julia recibió una donación de 12.000 pesos.']],
+      [['s4','Mateo revisó dos veces el conteo y dijo que los billetes estaban completos.'],['s5','Julia, sin embargo, recordó que una compradora pidió un libro al final de la jornada y que nadie anotó la venta.'],['s6','La caja tenía una llave que solo conocían los encargados de cada puesto.']],
+      [['s7','Los letreros del puesto de Julia eran azules y tenían los precios escritos a mano.'],['s8','Al comparar, el total registrado era de 172.000 pesos, mientras que el conteo indicaba 180.000.'],['s9','La diferencia de 8.000 pesos coincide con el precio de un libro, pero eso por sí solo no demuestra qué pasó.']]
+    ],
+    clues: [{id:'venta',t:'Venta sin anotar'},{id:'diferencia',t:'Diferencia de 8.000 pesos'},{id:'donacion',t:'Donación de 12.000 pesos'},{id:'llave',t:'Caja con llave'},{id:'letreros',t:'Letreros azules'},{id:'conteo',t:'Conteo revisado dos veces'}],
+    stages: [
+      {n:'Explicar', type:'choice', q:'¿Qué se puede inferir sobre la diferencia de 8.000 pesos? Elige la idea mejor sustentada.',
+       opts:['Mateo se quedó con 8.000 pesos.','Es posible que se haya vendido un libro que no quedó registrado; aún falta comprobarlo.','El registro y la caja coinciden; no hay diferencia.'], ok:1,
+       fb:['El texto no lo afirma. Es una acusación sin evidencia.','','Los números no coinciden: el conteo indica 180.000 y el registro suma 172.000.'],
+       hints:['Compara el total contado con el total registrado.','Busca la opción que presenta una posibilidad, no una certeza.','8.000 pesos es el precio de un libro.']},
+      {n:'Relacionar', type:'board', q:'Lleva al tablero las pistas que sustentan la idea de que falta un registro de venta.',
+       ok:['venta','diferencia'],
+       hints:['Busca la pista que muestra una venta que no quedó anotada.','Una pista es una diferencia numérica; otra es un hecho que ocurrió y no se registró.','Los letreros y la llave no hablan de ventas.']},
+      {n:'Justificar', type:'choice', q:'¿La llave de la caja demuestra que Mateo se quedó con el dinero? Elige la respuesta mejor justificada.',
+       opts:['Sí, Mateo tenía la llave y eso prueba que tomó el dinero.','No. Tener acceso a la caja no identifica una acción concreta ni prueba que alguien tomara dinero.','No se puede concluir nada de las pistas.'], ok:1,
+       fb:['Una pista no prueba una acusación. Mateo tenía acceso a la caja, pero eso no demuestra que tomara dinero.','','Las pistas sí aportan información: ayudan a formular hipótesis, aunque no las confirmen.'],
+       hints:['¿Qué significa que una persona tenga acceso a un objeto?','Pregúntate si la pista describe una acción concreta.','Una pista demuestra algo solo si descarta otras explicaciones.']},
+      {n:'Aplicar', type:'sentence', q:'Haz clic en la frase que explica de forma concreta por qué falta un registro en la caja.',
+       ok:['s5'], hints:['Busca la frase que habla de una compradora.','Pregunta: ¿qué parte del relato explica la diferencia de forma concreta?','Es la frase de Julia sobre el libro vendido al final de la jornada.']},
+      {n:'Transferir', type:'write', q:'Nuevo caso: en un puesto de jugos, el registro dice que se vendieron 30 vasos a 2.000 pesos, pero la caja tiene 54.000 pesos. Escribe tu conclusión: ¿qué podrías inferir y qué información te haría falta para confirmarlo?',
+       ev:['vasos','6.000','6000','54.000','54000','registro','caja','cambio','devolución'],
+       hints:['Usa la estructura: “Pienso que… porque el texto dice…”','Menciona la cantidad de vasos o la diferencia de dinero como evidencia.','Indica qué dato confirmaría o descartaría tu idea.']}
+    ]
+  },
+  sociales: {
+    materia: 'Ciencias sociales',
+    title: 'El pozo de San Andrés',
+    paras: [
+      [['s1','En el pueblo de San Andrés, el pozo principal dejó de dar agua durante tres semanas en agosto.'],['s2','Los vecinos del barrio alto se quejaron ante la junta comunal, y el barrio bajo afirmó que no había hecho nada.'],['s3','La junta publicó un comunicado que atribuía la falta de agua a la sequía de este año.']],
+      [['s4','Doña Carmen, que vive en el barrio alto, recordó que en julio se construyó una nueva conexión a la tubería del barrio bajo.'],['s5','Don Ernesto, encargado del pozo, dijo que el nivel bajó porque llovió muy poco durante dos meses.'],['s6','Sin embargo, el registro del pozo muestra que la bomba trabajó más horas de lo habitual en julio.']],
+      [['s7','Un vecino del barrio bajo afirmó que la conexión nueva solo se usó para regar huertas, pero no hay documentos que lo confirmen.'],['s8','Los datos de la estación regional muestran que hubo menos lluvias de lo normal durante esos dos meses.'],['s9','Con esta información, cada explicación tiene una parte de verdad, pero ninguna explica todo el problema por sí sola.']]
+    ],
+    clues: [{id:'conexion',t:'Conexión nueva en julio'},{id:'bomba',t:'Bomba con más horas'},{id:'comunicado',t:'Comunicado de la junta'},{id:'lluvias',t:'Lluvias bajo lo normal'},{id:'huertas',t:'Riego de huertas (sin documentos)'}],
+    stages: [
+      {n:'Explicar', type:'choice', q:'¿Cuál es la explicación más sólida de la falta de agua? Elige la idea mejor sustentada en las fuentes.',
+       opts:['La falta de agua se debe solo a la sequía, como dijo la junta.','La sequía pudo influir, pero el mayor uso del pozo también parece haber contribuido; aún falta comprobarlo.','El barrio bajo es el único responsable del problema.'], ok:1,
+       fb:['El registro muestra un uso mayor de la bomba, así que la sequía no explica todo por sí sola.','','Ninguna fuente demuestra una culpa única: un vecino dice que el agua se usó para huertas, y no hay documentos que lo prueben.'],
+       hints:['Compara lo que dice la junta con el registro de la bomba.','Busca la opción que reconoce varias causas posibles y no una culpa única.','Revisa qué dicen los datos de lluvias.']},
+      {n:'Relacionar', type:'board', q:'Lleva al tablero las pistas que sugieren una causa distinta a la sequía.',
+       ok:['conexion','bomba'],
+       hints:['Busca las pistas que hablan del uso del agua y no de la lluvia.','Una pista muestra un cambio en la infraestructura; otra, un cambio en el uso de la bomba.','La lluvia y el comunicado explican la sequía; no la separan de otras causas.']},
+      {n:'Justificar', type:'choice', q:'¿El comunicado de la junta demuestra que la sequía fue la única causa? Elige la respuesta mejor justificada.',
+       opts:['Sí, porque la junta lo publicó y las instituciones siempre tienen razón.','No. Es una fuente con interés en explicar el problema; hay que contrastarla con datos como el registro de la bomba.','No se puede decir nada del comunicado.'], ok:1,
+       fb:['Una institución también puede equivocarse o tener intereses; una fuente no se acepta solo por su autoridad.','','Las fuentes sí aportan información: sirven para formular hipótesis que luego se contrastan.'],
+       hints:['Pregúntate quién escribió el comunicado y con qué propósito.','¿Qué otro dato podría contrastar lo que dice la junta?','Una fuente se valida con otras fuentes.']},
+      {n:'Aplicar', type:'sentence', q:'Haz clic en la frase que muestra un cambio en el uso del pozo que la sequía no explica.',
+       ok:['s6'], hints:['Busca la frase que habla del registro del pozo.','Pregunta: ¿qué dato habla del uso del agua y no de la lluvia?','Es la frase sobre la bomba en julio.']},
+      {n:'Transferir', type:'write', q:'Nuevo caso: en otro pueblo, los agricultores dicen que la cosecha bajó por falta de lluvias, pero la estación registró lluvias normales y el canal de riego fue reparado en marzo. Escribe tu conclusión: ¿qué podrías inferir y qué fuente te ayudaría a confirmarlo?',
+       ev:['lluvias','canal','estación','registro','riego','fuente','cosecha'],
+       hints:['Usa la estructura: “Pienso que… porque el texto dice…”','Menciona el dato de lluvias o el canal de riego como evidencia.','Indica qué fuente confirmaría o descartaría tu idea.']}
+    ]
+  }
+};
+
+const MAT_INFO = {'Ciencias':'Razonar a partir de experimentos, observaciones y registros.','Lengua':'Leer entre líneas: intenciones, emociones y detalles implícitos.','Matemáticas':'Interpretar enunciados y cifras antes de resolver.','Ciencias sociales':'Analizar fuentes, contrastar testimonios y explicar causas.'};
+function renderMaterias(){
+  $('materias').innerHTML = '<div class="lbl">Elige una materia</div><div class="mgrid">' + Object.keys(MAT_INFO).map(m => `<div class="mcard"><h3>${m}</h3><p>${MAT_INFO[m]}</p><div class="mlinks">${Object.keys(CASES).filter(k => CASES[k].materia === m).map(k => `<button class="btn sm ghost" data-case="${k}">${CASES[k].title}</button>`).join('')}</div></div>`).join('') + '</div>';
+}
+const $ = id => document.getElementById(id);
+let ck = 'biblioteca', st = 0, xp = 0, done = [], board = [], sel = null, conf = null, hints = 0, sents = [], write = '', msg = null, rate = {};
+const C = () => CASES[ck];
+const S = () => C().stages[st];
+const maxHints = () => $('grade').value === 'primaria' ? 3 : 2;
+const rankOf = () => xp >= 80 ? 'Investigador' : xp >= 40 ? 'Detective' : 'Aprendiz';
+
+function resetState(){ st = 0; xp = 0; done = []; board = []; sel = null; conf = null; hints = 0; sents = []; write = ''; msg = null; rate = {}; }
+
+function renderAll(){ renderMaterias(); renderCases(); renderHud(); renderSteps(); renderStory(); renderClues(); renderBoard(); renderChal(); renderFinal(); }
+
+function renderCases(){
+  $('cases').innerHTML = '<button class="btn sm ghost" data-back="1">← Materias</button>' + Object.keys(CASES).filter(k => CASES[k].materia === C().materia).map(k => `<button class="btn sm ${k===ck?'':'ghost'}" data-case="${k}">${CASES[k].title}</button>`).join('');
+}
+function renderHud(){ $('rank').textContent = rankOf(); $('xpBar').style.width = Math.min(xp,100)+'%'; $('xpTxt').textContent = xp+' XP'; }
+function renderSteps(){ $('steps').innerHTML = C().stages.map((s,i)=>`<span class="${done[i]?'ok':i===st?'on':''}">${done[i]?'✓ ':''}${i+1}. ${s.n}</span>`).join(''); }
+function renderStory(){
+  $('stTitle').textContent = C().title;
+  const pick = st < C().stages.length && S().type === 'sentence' && !done[st];
+  $('story').className = pick ? 'pick' : '';
+  $('story').innerHTML = C().paras.map(p => `<p>${p.map(([id,t]) => `<span class="s ${sents.includes(id)?'on':''}" data-id="${id}">${t}</span>`).join(' ')}</p>`).join('');
+}
+function renderClues(){
+  const active = st < C().stages.length && S().type === 'board' && !done[st];
+  $('clues').innerHTML = C().clues.map(c => `<button class="chip ${board.includes(c.id)?'in':''}" data-clue="${c.id}" ${active?'':'disabled'}>${c.t}</button>`).join('');
+}
+function renderBoard(){
+  const active = st < C().stages.length && S().type === 'board' && !done[st];
+  $('board').innerHTML = board.length
+    ? board.map(id => `<div class="pista">${C().clues.find(c=>c.id===id).t}${active?`<button data-rm="${id}" aria-label="Quitar">×</button>`:''}</div>`).join('')
+    : '<span class="empty">Aún no hay pistas en el tablero.</span>';
+}
+function renderChal(){
+  if (st >= C().stages.length) { $('chal').hidden = true; return; }
+  $('chal').hidden = false;
+  const s = S(), max = maxHints();
+  let body = '';
+  if (s.type === 'choice') body = `<div class="opts">${s.opts.map((o,i)=>`<button class="opt ${sel===i?'sel':''}" data-opt="${i}">${o}</button>`).join('')}</div>`;
+  if (s.type === 'board') body = `<p class="empty">Pistas en el tablero: ${board.length}</p>`;
+  if (s.type === 'sentence') body = `<p class="empty">Frases seleccionadas: ${sents.length}</p>`;
+  if (s.type === 'write') body = `<div class="frame">Pienso que… porque el texto dice…</div><p class="empty" style="margin-bottom:8px">Rúbrica: estructura, pista del caso, posibilidad y desarrollo. Se aprueba con 3 de 4 criterios, y deben cumplirse la estructura y la pista del caso.</p><textarea id="wr" placeholder="Escribe tu conclusión aquí">${write}</textarea>`;
+  const cfs = ['Poco seguro','Algo seguro','Muy seguro'];
+  $('chal').innerHTML = `
+    <div class="lbl">Desafío ${st+1} de ${C().stages.length} · ${s.n}</div>
+    <p class="qt">${s.q}</p>
+    ${body}
+    <div class="conf"><span>¿Qué tan seguro estás?</span>${cfs.map((c,i)=>`<button data-conf="${i}" class="${conf===i?'on':''}">${c}</button>`).join('')}</div>
+    <div class="actions">${done[st]
+      ? `<button class="btn" data-act="next">${st<C().stages.length-1?'Siguiente desafío →':'Ver resultado'}</button>`
+      : `<button class="btn" data-act="verify">Confirmar respuesta</button><button class="btn ghost" data-act="hint" ${hints>=max?'disabled':''}>Pedir pista (${hints}/${max})</button>`}</div>
+    ${msg ? `<div class="fb ${msg.cls}">${msg.text}</div>` : ''}`;
+  if ($('wr')) $('wr').addEventListener('input', e => write = e.target.value);
+}
+function renderFinal(){
+  const end = st >= C().stages.length;
+  $('final').hidden = !end;
+  if (!end) return;
+  const keys = [['c','Las instrucciones fueron claras'],['m','La actividad me motivó a seguir leyendo'],['p','Las pistas me ayudaron a pensar mejor']];
+  const answered = keys.every(([k]) => rate[k]);
+  const avg = answered ? (keys.reduce((a,[k])=>a+rate[k],0)/3).toFixed(1) : null;
+  $('final').innerHTML = `
+    <h2>¡Caso resuelto!</h2>
+    <p>Rango: <b style="color:var(--vi)">${rankOf()}</b> · ${xp} XP</p>
+    <p style="margin-top:8px">Lo que valoramos es el camino del razonamiento, no solo la respuesta.</p>
+    <div class="survey">
+      <div class="lbl" style="text-align:center">Encuesta rápida de usabilidad (1 = no, 5 = sí)</div>
+      ${keys.map(([k,t])=>`<div><p>${t}</p><div class="rt">${[1,2,3,4,5].map(v=>`<button data-rate="${k}:${v}" class="${rate[k]===v?'on':''}">${v}</button>`).join('')}</div></div>`).join('')}
+      ${avg ? `<p style="text-align:center;color:var(--ok)">Promedio de la experiencia: ${avg} / 5. ¡Gracias por probar PistaLab!</p>` : ''}
+    </div>
+    <div style="margin-top:22px"><button class="btn" data-act="reset">Jugar de nuevo</button></div>`;
+}
+
+function verify(){
+  const s = S();
+  if (conf === null) { msg = {cls:'hint', text:'Antes de confirmar, indica qué tan seguro estás de tu respuesta.'}; return renderChal(); }
+  let ok = false, text = '';
+  if (s.type === 'choice') {
+    if (sel === null) { msg = {cls:'hint', text:'Elige una opción primero.'}; return renderChal(); }
+    ok = sel === s.ok; text = s.fb[sel];
+  } else if (s.type === 'board') {
+    ok = board.length === s.ok.length && s.ok.every(x => board.includes(x));
+    text = ok ? '' : !board.length ? 'El tablero está vacío. Añade las pistas que sustentan tu hipótesis.'
+      : s.ok.some(x => !board.includes(x)) ? 'Te falta alguna pista importante para sustentar la idea.'
+      : 'Hay pistas en el tablero que no sustentan esta idea. Revisa cuáles no encajan.';
+  } else if (s.type === 'sentence') {
+    ok = sents.length === 1 && sents[0] === s.ok[0];
+    text = ok ? '' : !sents.length ? 'Haz clic en una frase del relato.'
+      : sents.includes(s.ok[0]) ? 'Incluye solo la frase que responde la pregunta.'
+      : 'Esa frase no responde la pregunta. Busca la que corresponde.';
+  } else {
+    const t = write.toLowerCase(), miss = [];
+    if (!(t.includes('pienso que') && t.includes('porque'))) miss.push('Usa la estructura “Pienso que… porque el texto dice…”.');
+    if (!s.ev.some(w => t.includes(w))) miss.push('Cita al menos una pista concreta del caso.');
+    if (!HEDGE.some(w => t.includes(w))) miss.push('Indica que tu conclusión es una posibilidad (por ejemplo, “podría” o “es posible”).');
+    if (t.length <= 80) miss.push('Desarrolla un poco más tu razonamiento.');
+    const crit = [['Estructura “Pienso que… porque…”', t.includes('pienso que') && t.includes('porque')], ['Cita una pista concreta del caso', s.ev.some(w => t.includes(w))], ['Señala que es una posibilidad, no una certeza', HEDGE.some(w => t.includes(w))], ['Desarrolla el razonamiento', t.length > 80]];
+    const score = crit.filter(c => c[1]).length;
+    ok = score >= 3 && crit[0][1] && crit[1][1];
+    text = `<b>Rúbrica: ${score} de 4</b><ul style="margin:8px 0 0 18px">${crit.map(c => `<li>${c[1] ? '✓' : '✗'} ${c[0]}</li>`).join('')}</ul>` + (ok ? '' : ' Revisa los criterios marcados con ✗.');
+  }
+  if (ok) {
+    const gain = Math.max(5, 20 - 5 * hints);
+    xp += gain; done[st] = true;
+    let extra = '';
+    if (conf === 0) extra = ' Acertaste con poca seguridad: ¿qué pista te dio confianza?';
+    if (conf === 2) extra = ' Tu seguridad coincidió con la evidencia.';
+    msg = {cls:'good', text:`¡Correcto! +${gain} XP.${extra} ${text}`};
+  } else {
+    msg = {cls:'bad', text: text + (conf === 2 ? ' Tu seguridad era alta: revisa la evidencia antes de confirmar.' : '')};
+  }
+  renderAll();
+}
+
+function hint(){
+  if (hints >= maxHints()) return;
+  msg = {cls:'hint', text:`Pista ${hints+1}: ${S().hints[hints]}`};
+  hints++; renderAll();
+}
+
+function next(){
+  st++; sel = null; conf = null; hints = 0; msg = null; write = ''; sents = [];
+  renderAll();
+  if (st < C().stages.length) $('app').scrollIntoView({behavior:'smooth'});
+}
+
+$('chal').addEventListener('click', e => {
+  const t = e.target.closest('[data-opt],[data-conf],[data-act]');
+  if (!t) return;
+  if (t.dataset.opt !== undefined) { sel = +t.dataset.opt; msg = null; return renderChal(); }
+  if (t.dataset.conf !== undefined) { conf = +t.dataset.conf; return renderChal(); }
+  if (t.dataset.act === 'verify') verify();
+  if (t.dataset.act === 'hint') hint();
+  if (t.dataset.act === 'next') next();
+});
+
+$('final').addEventListener('click', e => {
+  const r = e.target.closest('[data-rate]');
+  if (r) { const [k,v] = r.dataset.rate.split(':'); rate[k] = +v; return renderFinal(); }
+  if (e.target.closest('[data-act="reset"]')) { resetState(); renderAll(); $('app').scrollIntoView({behavior:'smooth'}); }
+});
+
+$('story').addEventListener('click', e => {
+  const sp = e.target.closest('.s');
+  if (!sp || st >= C().stages.length || S().type !== 'sentence' || done[st]) return;
+  const id = sp.dataset.id;
+  sents = sents.includes(id) ? sents.filter(x => x !== id) : [...sents, id];
+  msg = null; renderStory(); renderChal();
+});
+
+$('clues').addEventListener('click', e => {
+  const c = e.target.closest('[data-clue]');
+  if (!c || st >= C().stages.length || S().type !== 'board' || done[st]) return;
+  const id = c.dataset.clue;
+  board = board.includes(id) ? board.filter(x => x !== id) : [...board, id];
+  msg = null; renderClues(); renderBoard(); renderChal();
+});
+
+$('board').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]');
+  if (!b || st >= C().stages.length || S().type !== 'board' || done[st]) return;
+  board = board.filter(x => x !== b.dataset.rm);
+  msg = null; renderClues(); renderBoard(); renderChal();
+});
+
+$('cases').addEventListener('click', e => {
+  const b = e.target.closest('[data-case]');
+  if (!b) return;
+  ck = b.dataset.case; resetState(); renderAll();
+});
+
+$('grade').addEventListener('change', () => { hints = Math.min(hints, maxHints()); renderChal(); });
+$('materias').addEventListener('click', e => { const b = e.target.closest('[data-case]'); if (!b) return; ck = b.dataset.case; resetState(); renderAll(); $('app').scrollIntoView({behavior:'smooth'}); });
+$('cases').addEventListener('click', e => { const bk = e.target.closest('[data-back]'); if (bk) $('materias').scrollIntoView({behavior:'smooth'}); });
+$('startBtn').addEventListener('click', () => $('materias').scrollIntoView({behavior:'smooth'}));
+renderAll();
+</script>
+</body>
+</html>
